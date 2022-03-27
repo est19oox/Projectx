@@ -207,3 +207,72 @@ svm_Linear
 ```
 
 ![Capture](https://user-images.githubusercontent.com/70089857/160278040-f117a83a-63f7-4381-a86d-5b3f64f5db51.PNG)
+
+From the start, it has achieved an RMSE of 0.2 within the train set itself. This could be the model I am looking for. This RMSE however is comparing the rating column with other columns and not itself.
+
+```
+test_pred <- predict(svm_Linear, newdata = test)
+head(test_pred)
+test_predi <- round_any(test_pred,0.5)
+head(test_predi)
+```
+
+![Capture](https://user-images.githubusercontent.com/70089857/160278158-7c5be877-5824-4d5e-964e-ba611f2ddc63.PNG)
+
+I use the predict() function to test the model with the test set and received some data with many decimal places. To compare the results, I rounded values to any closest 0.5 value.
+
+![Capture](https://user-images.githubusercontent.com/70089857/160278195-fac693ef-689f-4a21-b6f6-459ee4ea081f.PNG)
+
+Putting the predictions and the rating column into a table, we notice that there are predicted values ABOVE 5, which are not part of the original rating of 0.5 to 5, therefore I converted any value above 5 into 5 as below:
+
+```
+n = length(test_predi)
+for (i in 1:n)  {
+  if(test_predi[i] > 5) test_predi[i] = 5
+  }
+  confusionMatrix(test_df)
+  RMSE(test$rating, test_predi)
+  
+  ```
+  With the confusionMatrix however, the result only returned an accuracy of 0.2 as well.
+  
+A final RMSE calculation shows a score of 1.114, which is the worst the computer has calculated so far.
+I will now attempt to use svm() function in the package e1071:
+
+```
+test_svm <- svm(rating~., data=train)
+summary(test_svm)
+rmse = RMSE(test$rating, predi)
+rmse
+```
+Following the same steps, we achieved a similar result, that is a 0.2 accuracy and 1.118 rmse. This could be a possible sign of overfitting.
+As with the Random Forest model, we will attempt to build the model on just the 4 selected predictors: year, week, movie_score and user_score.
+
+```
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+svm_Linear <- train(rating~user_score+movie_score+year+week,data=train,method='svmLinear',trControl=trctrl,
+preProcess =c("center","scale"),tuneLength = 10)
+svm_Linear
+rmse = RMSE(test$rating,test_predi)
+rmse
+```
+
+![Capture](https://user-images.githubusercontent.com/70089857/160278530-3809d634-b42a-4dab-a86d-75584d339a22.PNG)
+
+Again, both original train RMSE, test RMSE and accuracy show similar results regardless of the less used predictors. To avoid overfitting, we will attempt to avoid overfitting by doubling the data input from 10000 to 20000.
+
+By increasing the data input, the final RMSE has lowered by 0.01. This possibly proves the theory of overfitting in this case further. Since the original data set has 20 million data, that amount might make the difference in obtaining a much lower RMSE and better accuracy along with better predictions, alas we do not have the computer capacity to attempt such a task.
+
+In conclusion, Support Vector Machines might not be the model we are looking for as well due to resulting in the highest final RMSE, with a probable cause being overfitting. Taking a look back at the data obtained, most of the ratings are clustered around 2.5-4.5, thus the model being unable to set definite classes, disallowing the model to perform on new data.
+
+# Discussion
+
+The final RMSE score is 0.9468128. There is a lot of room for improvement, but we have not found a better solution yet. One idea is to stratify the user_scores by genres, since the same user may love some genres but hate others.I believe that logistic regression will be better for categorical data than linear regression. Linear regression deals with continuous values whereas classification problems mandate discrete values. It is more sensitive to the shift in threshold value when new data points are added.
+
+We can consider running Lasso before Random Forest for a better prediction. Random Forest is a fully nonparametric predictive algorithm, it may not efficiently incorporate known relationships between the response and the predictors. Random Forest is also unable to discover trends that would enable it in extrapolation values that fall outside of the training set. The same user might not give as high of a rating to a movie genre in the future. We deal with extrapolation by using linear models such as SVM or Linear Regression.
+
+Moving on to SVM, results obtained were the worst with an RMSE of above 1.1, however it seems likely that overfitting is the main cause of this issue. More tests or experiments need to be conducted for a better estimation of the models’ performance. Also of note that ratings cluster around a certain score as expected of normal ratings, meaning that the model is unable to set definitive classes as it might look at it as one single class, or have many different classes and thus having trouble relating them to one another, finally having a very undefined hyperplane.
+
+
+
+
