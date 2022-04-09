@@ -1,5 +1,4 @@
-# Projectx
-Big data project in Apache Spark using Spark MLlib 
+# Big data project in Apache Spark using Spark MLlib 
 
 # Data Overview
 
